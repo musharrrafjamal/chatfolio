@@ -1,0 +1,31 @@
+{
+    "manifest_version": 3,
+    "name": "Chatfolio",
+    "version": "1.0",
+    "description": "Save AI conversations with one click",
+    "permissions": ["storage", "activeTab", "tabs"],
+    "action": {
+      "default_popup": "index.html",
+      "default_icon": {
+        "16": "chatfolio.png",
+        "48": "chatfolio.png",
+        "128": "chatfolio.png"
+      }
+    },
+    "content_scripts": [
+      {
+        "matches": [
+          "https://chatgpt.com/*",
+          "https://claude.ai/*",
+          "https://www.perplexity.ai/*",
+          "https://v0.dev/*"
+        ],
+        "js": ["content.js"]
+      }
+    ],
+    "icons": {
+      "16": "chatfolio.png",
+      "48": "chatfolio.png",
+      "128": "chatfolio.png"
+    }
+  }
