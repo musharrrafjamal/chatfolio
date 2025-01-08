@@ -7,7 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface EditTitleDialogProps {
   open: boolean;
@@ -26,18 +26,18 @@ export function EditTitleDialog({
 }: EditTitleDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="w-[400px] max-w-[400px]">
         <DialogHeader>
           <DialogTitle>Edit Conversation Title</DialogTitle>
-          <DialogDescription className="text-xs">
-            Edit the title of your conversation.
-          </DialogDescription>
         </DialogHeader>
-        <Input
-          type="text"
+        <DialogDescription className="sr-only">
+          Edit the title of your conversation.
+        </DialogDescription>
+        <Textarea
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           autoFocus
+          className="max-h-[200px]"
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               onSave();

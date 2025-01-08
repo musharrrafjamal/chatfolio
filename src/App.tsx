@@ -15,6 +15,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "./components/ui/input";
 import { EditTitleDialog } from "@/components/EditTitleDialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./components/ui/select";
+import { Badge } from "./components/ui/badge";
 
 interface Conversation {
   id: number;
@@ -35,6 +43,7 @@ export default function Popup() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editedTitle, setEditedTitle] = useState("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [platformFilter, setPlatformFilter] = useState<string>("all");
 
   useEffect(() => {
     // @ts-expect-error (Chrome API)
@@ -42,6 +51,10 @@ export default function Popup() {
       setConversations(result.conversations || []);
     });
   }, []);
+
+  useEffect(() => {
+    console.log(conversations);
+  }, [conversations]);
 
   const deleteConversation = (id: number) => {
     const updatedConversations = conversations.filter((conv) => conv.id !== id);
@@ -51,9 +64,23 @@ export default function Popup() {
     });
   };
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredConversations = conversations.filter((conv) => {
+    const matchesSearch = conv.title
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase());
+    const matchesPlatform =
+      platformFilter === "all" || conv.platform === platformFilter;
+    return matchesSearch && matchesPlatform;
+  });
+
+  const platforms = [
+    "all",
+    ...new Set(
+      conversations
+        .map((conv) => conv.platform)
+        .filter((platform): platform is string => platform !== "")
+    ),
+  ];
 
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -92,7 +119,7 @@ export default function Popup() {
 
   return (
     <div
-      className={`w-[400px] p-4 ${
+      className={`w-[600px] p-4 ${
         theme === "dark" ? "bg-gray-900 text-white" : "bg-white text-gray-900"
       } overflow-hidden min-h-96 max-h-[800px] transition-colors duration-300`}
     >
@@ -104,38 +131,69 @@ export default function Popup() {
           </h1>
         </div>
         <label className="switch">
-          <input type="checkbox" onChange={toggleTheme} checked={theme === "dark"}/>
+          <input
+            type="checkbox"
+            onChange={toggleTheme}
+            checked={theme === "dark"}
+          />
           <span className="slider"></span>
           <span className="sr-only">Toggle theme</span>
         </label>
       </div>
 
-      <motion.div
-        className="relative mb-4"
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Input
-          type="text"
-          autoFocus
-          placeholder="Search conversations..."
-          value={searchTerm}
-          icon={<Search className="h-5 w-5" />}
-          endIcon={
-            searchTerm && (
-              <X
-                className="h-5 w-5 cursor-pointer"
-                onClick={() => setSearchTerm("")}
-              />
-            )
-          }
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </motion.div>
+      <div className="flex gap-4 mb-4">
+        <motion.div
+          className="relative flex-1"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Input
+            type="text"
+            autoFocus
+            placeholder="Search conversations..."
+            value={searchTerm}
+            icon={<Search className="h-5 w-5" />}
+            endIcon={
+              searchTerm && (
+                <X
+                  className="h-5 w-5 cursor-pointer"
+                  onClick={() => setSearchTerm("")}
+                />
+              )
+            }
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </motion.div>
+
+        <Select
+          value={platformFilter}
+          onValueChange={(value) => setPlatformFilter(value)}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Platform" />
+          </SelectTrigger>
+          <SelectContent>
+            {platforms.map((platform) => (
+              <SelectItem key={platform} value={platform}>
+                {platform.charAt(0).toUpperCase() + platform.slice(1)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       <motion.div
-        className="space-y-3 max-h-[400px] overflow-y-auto"
+        className={`space-y-3 max-h-[400px] overflow-y-auto [&::-webkit-scrollbar]:w-2
+                    [&::-webkit-scrollbar-track]:rounded-full
+                    [&::-webkit-scrollbar-thumb]:rounded-full
+  
+                    ${
+                      theme === "dark"
+                        ? "[&::-webkit-scrollbar-track]:bg-neutral-700 [&::-webkit-scrollbar-thumb]:bg-neutral-500"
+                        : "[&::-webkit-scrollbar-track]:bg-gray-100 [&::-webkit-scrollbar-thumb]:bg-gray-300"
+                    }
+                    `}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3, delay: 0.2 }}
@@ -161,23 +219,34 @@ export default function Popup() {
                   chrome.tabs.create({ url: conv.url });
                 }}
               >
-                <div className="font-medium flex items-center gap-2">
+                <div className="font-medium text-lg flex items-center gap-2">
                   {conv.title}
                 </div>
                 <div
-                  className={`text-sm mt-1 ${
+                  className={`text-xs mt-1 ${
                     theme === "dark" ? "text-gray-400" : "text-gray-500"
                   }`}
                 >
                   {new Date(conv.savedAt).toLocaleString()}
                 </div>
-                <div
-                  className={`text-sm ${
-                    theme === "dark" ? "text-gray-400" : "text-gray-500"
+                <Badge
+                  variant={`${
+                    conv.platform === "Claude"
+                      ? "claude"
+                      : conv.platform === "ChatGPT"
+                      ? "chatgpt"
+                      : conv.platform === "Perplexity"
+                      ? "perplexity"
+                      : conv.platform === "Gemini"
+                      ? "gemini"
+                      : conv.platform === "V0 by Vercel"
+                      ? "vercel"
+                      : "default"
                   }`}
+                  className="text-xs mt-1"
                 >
-                  Platform: {conv.platform}
-                </div>
+                  {conv.platform}
+                </Badge>
               </div>
               <div className="flex items-center gap-1">
                 <button
